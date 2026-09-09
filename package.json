@@ -1,0 +1,15 @@
+{
+  "name": "quiet-test-lint",
+  "version": "0.1.0",
+  "description": "A linter that flags things which corrupt or hide unit test output",
+  "license": "MIT",
+  "bin": {
+    "quiet-test-lint": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
