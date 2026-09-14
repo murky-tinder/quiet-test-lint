@@ -22,6 +22,9 @@ anything - it reads source text and pattern-matches lines.
 - `console.log` / `console.warn` / `console.error` / `console.debug` inside
   test files - output that interleaves with the test reporter and makes real
   failures harder to spot.
+- Empty test bodies - `it('does the thing', () => {})` reports as a pass
+  without checking anything, including a body that only contains a leftover
+  comment.
 
 ## Usage
 
