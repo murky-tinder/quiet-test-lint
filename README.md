@@ -69,6 +69,20 @@ src/user.test.ts:30:5  warn   no-console-in-test  console output here will inter
 
 Exit code is `1` if any finding is an error, `0` otherwise, so it can gate CI.
 
+Pass `--json` to get machine-readable output instead of the printed lines,
+useful for CI systems that want to parse results rather than scrape text:
+
+```
+node dist/cli.js --json src/user.test.ts
+```
+
+```
+{"findings":[{"file":"src/user.test.ts","line":12,"column":1,"rule":"no-focused-test","severity":"error","message":"focused test will silently hide every other test in this run"}],"errorCount":1,"warningCount":0}
+```
+
+`--json` can be combined with file arguments or stdin the same way as the
+default output mode.
+
 ## Why not just use ESLint
 
 ESLint rules like `no-only-tests` exist, but they require ESLint's full

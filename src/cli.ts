@@ -17,24 +17,33 @@ function printFinding(f: Finding): void {
 
 async function main(): Promise<number> {
   const args = process.argv.slice(2)
-  const targets = args.length > 0 ? args : ['-']
+  const jsonOutput = args.includes('--json')
+  const targets = args.filter((a) => a !== '--json')
+  const paths = targets.length > 0 ? targets : ['-']
 
   let findings: Finding[] = []
 
-  for (const target of targets) {
+  for (const target of paths) {
     const source =
       target === '-' ? await readStdin() : readFileSync(target, 'utf8')
     const label = target === '-' ? '<stdin>' : target
     findings = findings.concat(lintText(source, label))
   }
 
-  for (const finding of findings) {
-    printFinding(finding)
-  }
-
   const errorCount = findings.filter((f) => f.severity === 'error').length
-  if (findings.length > 0) {
-    console.log(`\n${findings.length} finding(s), ${errorCount} error(s)`)
+  const warningCount = findings.length - errorCount
+
+  if (jsonOutput) {
+    // Machine-readable path for CI: exact shape, no trailing summary line
+    // mixed into the same stream as the printed one.
+    console.log(JSON.stringify({ findings, errorCount, warningCount }))
+  } else {
+    for (const finding of findings) {
+      printFinding(finding)
+    }
+    if (findings.length > 0) {
+      console.log(`\n${findings.length} finding(s), ${errorCount} error(s)`)
+    }
   }
 
   return errorCount > 0 ? 1 : 0
