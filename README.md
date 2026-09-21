@@ -25,6 +25,11 @@ anything - it reads source text and pattern-matches lines.
 - Empty test bodies - `it('does the thing', () => {})` reports as a pass
   without checking anything, including a body that only contains a leftover
   comment.
+- Duplicate test names within the same `describe` block - when two tests
+  share a name, a failure in either one shows up under the same label, so
+  the report can't tell you which one actually broke. The same name reused
+  in a different (sibling or unrelated) `describe` block is fine and not
+  flagged.
 
 ## Usage
 

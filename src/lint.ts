@@ -61,6 +61,7 @@ export function lintText(source: string, file: string): Finding[] {
   }
 
   findings.push(...findEmptyTestBodies(source, file))
+  findings.push(...findDuplicateTestNames(source, file))
 
   findings.sort((a, b) => a.line - b.line || a.column - b.column)
 
@@ -170,4 +171,66 @@ function findEmptyTestBodies(source: string, file: string): Finding[] {
   }
 
   return findings
+}
+
+// Same head shape as TEST_CALL_HEAD but also matches `describe` and captures
+// the call kind plus the raw (still-escaped) name text, since duplicate
+// detection needs to compare names and duplicate scoping needs to know
+// which calls open a new describe block.
+const NAMED_CALL_HEAD_SOURCE =
+  '\\b(describe|it|test)(?:\\.(?:only|skip))?\\s*\\(\\s*([\'"`])((?:\\\\.|(?!\\2)[\\s\\S])*?)\\2\\s*,\\s*(?:async\\s+)?(?:function\\b[^({]*\\([^)]*\\)|\\([^)]*\\)\\s*=>)\\s*\\{'
+
+// Two `it`/`test` calls with the same name in the same describe block report
+// as two separate results with an identical label, so a failure in one is
+// indistinguishable from a failure in the other when reading the output.
+// Names are only compared within their own scope - the same name reused
+// across sibling or unrelated describe blocks is normal and not flagged.
+function findDuplicateTestNames(source: string, file: string): Finding[] {
+  const findings: Finding[] = []
+  scanForDuplicateNames(source, 0, source.length, new Set(), file, findings)
+  return findings
+}
+
+function scanForDuplicateNames(
+  source: string,
+  from: number,
+  to: number,
+  seen: Set<string>,
+  file: string,
+  findings: Finding[],
+): void {
+  const pattern = new RegExp(NAMED_CALL_HEAD_SOURCE, 'g')
+  pattern.lastIndex = from
+  let match: RegExpExecArray | null
+
+  while ((match = pattern.exec(source))) {
+    if (match.index >= to) break
+
+    const kind = match[1]
+    const name = match[3]
+    const openBrace = match.index + match[0].length - 1
+    const closeBrace = findMatchingBrace(source, openBrace)
+    if (closeBrace === -1 || closeBrace >= to) {
+      pattern.lastIndex = match.index + match[0].length
+      continue
+    }
+
+    if (kind === 'describe') {
+      scanForDuplicateNames(source, openBrace + 1, closeBrace, new Set(), file, findings)
+    } else if (seen.has(name)) {
+      const { line, column } = locate(source, match.index)
+      findings.push({
+        file,
+        line,
+        column,
+        rule: 'no-duplicate-test-name',
+        severity: 'warning',
+        message: `duplicate test name "${name}" already used in this describe block`,
+      })
+    } else {
+      seen.add(name)
+    }
+
+    pattern.lastIndex = closeBrace + 1
+  }
 }
