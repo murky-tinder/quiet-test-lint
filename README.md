@@ -88,6 +88,21 @@ node dist/cli.js --json src/user.test.ts
 `--json` can be combined with file arguments or stdin the same way as the
 default output mode.
 
+## Disabling rules
+
+Put a `.quiet-test-lint.json` in the directory you run the linter from:
+
+```
+{
+  "disable": ["no-console-in-test", "no-disabled-test"]
+}
+```
+
+Rule names are the ones printed in the output. An unknown rule name, an
+unknown option, or invalid JSON stops the run with exit code `2` instead of
+being ignored. The default file is optional; use `--config path/to/file.json`
+to read a different one, in which case the file must exist.
+
 ## Why not just use ESLint
 
 ESLint rules like `no-only-tests` exist, but they require ESLint's full

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { applyConfig, loadConfig } from './config'
 import { lintText, type Finding } from './lint'
 
 function readStdin(): Promise<string> {
@@ -17,8 +18,25 @@ function printFinding(f: Finding): void {
 
 async function main(): Promise<number> {
   const args = process.argv.slice(2)
-  const jsonOutput = args.includes('--json')
-  const targets = args.filter((a) => a !== '--json')
+  let jsonOutput = false
+  let configPath: string | undefined
+  const targets: string[] = []
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]
+    if (arg === '--json') {
+      jsonOutput = true
+    } else if (arg === '--config') {
+      configPath = args[++i]
+      if (configPath === undefined) {
+        throw new Error('--config needs a file path')
+      }
+    } else {
+      targets.push(arg)
+    }
+  }
+
+  const config = loadConfig(configPath, process.cwd())
   const paths = targets.length > 0 ? targets : ['-']
 
   let findings: Finding[] = []
@@ -27,7 +45,7 @@ async function main(): Promise<number> {
     const source =
       target === '-' ? await readStdin() : readFileSync(target, 'utf8')
     const label = target === '-' ? '<stdin>' : target
-    findings = findings.concat(lintText(source, label))
+    findings = findings.concat(applyConfig(lintText(source, label), config))
   }
 
   const errorCount = findings.filter((f) => f.severity === 'error').length

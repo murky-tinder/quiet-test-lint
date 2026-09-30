@@ -39,6 +39,14 @@ const RULES: Rule[] = [
   },
 ]
 
+// Two rules are implemented as scanners rather than line patterns, so the
+// list of valid names for config validation can't be derived from RULES alone.
+export const RULE_NAMES: string[] = [
+  ...RULES.map((r) => r.name),
+  'no-empty-test',
+  'no-duplicate-test-name',
+]
+
 export function lintText(source: string, file: string): Finding[] {
   const findings: Finding[] = []
   const lines = source.split(/\r\n|\r|\n/)
